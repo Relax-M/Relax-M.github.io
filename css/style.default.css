@@ -317,11 +317,13 @@ SIDEBAR + RIGHT COLUMN
 =====================
 */
 #sidebar {
-  padding-top: 40px;
+  padding-top: 100px;
+  height: 100%;
 }
 .sidebar-content {
     z-index: 0;
     padding: 0 1.7em 0 0em;
+    height: 100%;
 }
 @media screen and (min-width: 992px) {
   .sidebar-content {
@@ -329,10 +331,19 @@ SIDEBAR + RIGHT COLUMN
     padding-right: 18px;
   }
 }
+.sidebar-headerimage {
+
+  width: 10em;
+  height: 10em;
+  border-radius: 5em;
+}
+
 .sidebar-heading {
+  margin-top: 2rem;
   font-size: 18px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  text-align: center;
 }
 .sidebar-heading a {
   color: #000;
@@ -349,6 +360,7 @@ SIDEBAR + RIGHT COLUMN
 .sidebar-p {
   color: #999999;
   font-size: 14px;
+  text-align: center;
 }
 .sidebar-menu {
   list-style-type: none;
