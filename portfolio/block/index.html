@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Block</title>
+<title>Block 探究</title>
 <meta name="description" content="Describe your website">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="all,follow">
@@ -90,34 +90,215 @@
   <div class="row">
     <div class="col-lg-8">
       <div class="content-column-content">
-         <h1>Block</h1>
-         <p>和When she reached the first hills of the Italic Mountains, she had a last view back on the skyline of her hometown Bookmarksgrove, the headline of Alphabet Village and the subline of her own road, the Line Lane.</p>
+         <h1>Block 探究</h1>
+         <p><img src="http://ptyj5p18v.bkt.clouddn.com/block_ios.png" alt="" /></p>
 
-<p>Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts. Separated they live in Bookmarksgrove right at the coast of the Semantics, a large language ocean.</p>
-
-<p>A small river named Duden flows by their place and supplies it with the necessary regelialia. It is a paradisematic country, in which roasted parts of sentences fly into your mouth.</p>
-
-<ol>
-<li>Lorem ipsum dolor sit amet, consectetuer adipiscing elit.</li>
-<li>Aliquam tincidunt mauris eu risus.</li>
-</ol>
+<h4 id="概要">概要</h4>
 
 <blockquote>
-<p>The Big Oxmox advised her not to do so, because there were thousands of bad Commas, wild Question Marks and devious Semikoli, but the Little Blind Text didn&rsquo;t listen. She packed her seven versalia, put her initial into the belt and made herself on the way.</p>
+<p><font color=#84d5cf>带有自动变量（局部变量）的匿名函数</font></p>
 </blockquote>
 
-<h2 id="header-level-2">Header Level 2</h2>
+<p>简单来说就是在Block的一对{}作用域里使用到但却在{}作用域以外声明的变量没有函数名的函数</p>
 
-<p>Even the all-powerful Pointing has no control about the blind texts it is an almost unorthographic life One day however a small line of blind text by the name of Lorem Ipsum decided to leave for the far World of Grammar.</p>
+<p>Block 是 Objective-C 对于闭包的实现。闭包 = 一个函数「或指向函数的指针」+ 该函数执行的外部的上下文变量「也就是自由变量」</p>
 
-<p>The Big Oxmox advised her not to do so, because there were thousands of bad Commas, wild Question Marks and devious Semikoli, but the Little Blind Text didn&rsquo;t listen. She packed her seven versalia, put her initial into the belt and made herself on the way.</p>
+<h4 id="语法">语法</h4>
+
+<blockquote>
+<p><font color=#84d5cf>^ 返回值类型 (参数列表) {表达式}</font></p>
+</blockquote>
+
+<pre><code>  int (^blk)(int) = ^(int count) {
+        return count + 1;
+    };
+</code></pre>
+
+<h4 id="实质">实质</h4>
+
+<p>Block语法看上去好像很特别，Block实际上是作为极普通的C语言源码来处理的：含有Block语法的源码首先被转换成C语言编译器能处理的源码，再作为普通的C源代码进行编译。</p>
+
+<blockquote>
+<p><font color=#84d5cf>clang -rewrite-objc 源码文件名</font></p>
+</blockquote>
+
+<h4 id="截获自动变量">截获自动变量</h4>
+
+<p>对于 block 作用域外的变量引用，block 默认是将其复制到其数据结构中来实现访问的。特别要注意的是默认情况下block只能访问不能修改局部变量的值。</p>
+
+<p>那如果只是单纯的访问，局限性太大，那么如何修改呢？</p>
+
+<blockquote>
+<p><font color=#d6339a>__block </font> 修饰指定block中想变更值的自动变量</p>
+</blockquote>
+
+<p>我们可以发现用 <font color=#d6339a>__block </font> 修饰的变量类型是一个结构体实例</p>
+
+<p><img src="http://ptyj5p18v.bkt.clouddn.com/__Block_byref_val_0.png" alt="" /></p>
+
+<p><font color=#d6339a> __Block_byref_val_0 </font>结构体实例的成员变量<font color=#d6339a> __forwarding </font>持有指向该实例自身的指针，通过成员变量 <font color=#d6339a> __forwarding </font>访问成员变量 <font color=#d6339a>val</font></p>
+
+<h4 id="存储域">存储域</h4>
+
+<p>通过前面说明可知，Block转换为Block的结构体类型的自动变量，<font color=#d6339a> __block </font>变量转换为 <font color=#d6339a> __block </font> 变量的结构体类型的自动变量。所谓结构体类型的自动变量，即栈上生成的该结构体的实例</p>
+
+<p><img src="http://ptyj5p18v.bkt.clouddn.com/block_save.png" alt="" /></p>
+
+<p>如上图Block存储域有三种类型，</p>
+
+<h5 id="nsconcreteglobalblock">NSConcreteGlobalBlock</h5>
 
 <ul>
-<li>Lorem ipsum dolor sit amet, consectetuer adipiscing elit.</li>
-<li>Aliquam tincidunt mauris eu risus.</li>
+<li>全局区域声明定义一个block</li>
+<li>block表达式中没有使用捕获的自动变量时</li>
 </ul>
 
-<p>When she reached the first hills of the Italic Mountains, she had a last view back on the skyline of her hometown Bookmarksgrove, the headline of Alphabet Village and the subline of her own road, the Line Lane. Pityful a rethoric question ran over her cheek, then</p>
+<h5 id="nsconcretestackblock">NSConcreteStackBlock</h5>
+
+<ul>
+<li>栈块存在于栈内存中, 超出其作用域则马上被销毁,不会持有对象</li>
+</ul>
+
+<h5 id="nsconcretemallocblock">NSConcreteMallocBlock</h5>
+
+<ul>
+<li>堆块存在于堆内存中, 是一个带引用计数的对象, 需要自行管理其内存,会持有对象</li>
+</ul>
+
+<p>开启ARC时，大多数情况下编译器会恰当地进行判断是否有需要将Block从栈复制到堆，如果有，自动生成将Block从栈上复制到堆上的代码。<font color=#d6339a> __block </font>变量用结构体成员变量<font color=#d6339a> __forwarding </font>可以实现无论<font color=#d6339a> __block </font>变量配置在栈上还是堆上都能够正确的访问<font color=#d6339a> __block </font>变量</p>
+
+<p>但向方法或者函数的参数传递Block时，编译器不能进行判断，此时我们可以使用”copy 实例方法“</p>
+
+<p><img src="http://ptyj5p18v.bkt.clouddn.com/block_copy.png" alt="" /></p>
+
+<h4 id="block-探究">Block 探究</h4>
+
+<p>通过上面的转换，让我们深入了解Block</p>
+
+<pre><code>- (void)modifyVarBlock
+{
+    __block int val = 0;
+    void (^ modifyVarBlk)(void) = ^(){
+        val = 1;
+    };
+    modifyVarBlk();
+}
+</code></pre>
+
+<pre><code class="language-c">static void _I_Block_modifyVarBlock(Block * self, SEL _cmd) {
+    __attribute__((__blocks__(byref))) __Block_byref_val_0 val = {(void*)0,(__Block_byref_val_0 *)&amp;val, 0, sizeof(__Block_byref_val_0), 0};
+    void (* modifyVarBlk)(void) = ((void (*)())&amp;__Block__modifyVarBlock_block_impl_0((void *)__Block__modifyVarBlock_block_func_0, &amp;__Block__modifyVarBlock_block_desc_0_DATA, (__Block_byref_val_0 *)&amp;val, 570425344));
+    ((void (*)(__block_impl *))((__block_impl *)modifyVarBlk)-&gt;FuncPtr)((__block_impl *)modifyVarBlk);
+}
+</code></pre>
+
+<blockquote>
+<p><font color=#84d5cf>OC方法转换具体实现</font></p>
+</blockquote>
+
+<pre><code class="language-c">static void __Block__modifyVarBlock_block_func_0(struct __Block__modifyVarBlock_block_impl_0 *__cself) {
+  __Block_byref_val_0 *val = __cself-&gt;val; // bound by ref
+        (val-&gt;__forwarding-&gt;val) = 1;
+}
+</code></pre>
+
+<blockquote>
+<p><font color=#84d5cf>这是一个函数的实现，对应Block中{}内的内容，这些内容被当做了C语言函数来处理，函数参数中的__cself相当于Objective-C中的self。结构体的指针</font></p>
+</blockquote>
+
+<pre><code class="language-cpp">static struct __Block__modifyVarBlock_block_desc_0 {
+  size_t reserved;
+  size_t Block_size;
+  void (*copy)(struct __Block__modifyVarBlock_block_impl_0*, struct __Block__modifyVarBlock_block_impl_0*);
+  void (*dispose)(struct __Block__modifyVarBlock_block_impl_0*);
+} __Block__modifyVarBlock_block_desc_0_DATA = { 0, sizeof(struct __Block__modifyVarBlock_block_impl_0), __Block__modifyVarBlock_block_copy_0, __Block__modifyVarBlock_block_dispose_0};
+
+static void __Block__modifyVarBlock_block_copy_0(struct __Block__modifyVarBlock_block_impl_0*dst, struct __Block__modifyVarBlock_block_impl_0*src) {
+    _Block_object_assign((void*)&amp;dst-&gt;val, (void*)src-&gt;val, 8/*BLOCK_FIELD_IS_BYREF*/);
+}
+
+static void __Block__modifyVarBlock_block_dispose_0(struct __Block__modifyVarBlock_block_impl_0*src) {
+    _Block_object_dispose((void*)src-&gt;val, 8/*BLOCK_FIELD_IS_BYREF*/);
+}
+</code></pre>
+
+<blockquote>
+<p><font color=#84d5cf>block的附加描述信息，比如block的大小、进行copy或dispose的辅助函数指针</font></p>
+</blockquote>
+
+<p>block被拷贝到堆上，会调用block内部的copy函数，copy函数内部会调用<font color=#d6339a> __ Block_object_assign</font>函数，根据auto变量的修饰符（<strong>strong、</strong>weak、__unsafe_unretained）做出相应的操作，形成强引用（retain）或者弱引用</p>
+
+<p>block从堆上移除，会调用block内部的dispose函数，dispose函数内部会调用<font color=#d6339a>__Block_object_dispose</font>函数，动释放引用的auto变量（release）</p>
+
+<pre><code class="language-cpp">struct __block_impl {
+    void *isa;
+    int Flags;
+    int Reserved;
+    void *FuncPtr;
+};
+</code></pre>
+
+<pre><code class="language-cpp">struct __Block_byref_val_0 {
+  void *__isa;
+__Block_byref_val_0 *__forwarding;
+ int __flags;
+ int __size;
+ int val;
+};
+</code></pre>
+
+<p><img src="http://ptyj5p18v.bkt.clouddn.com/block_forwarding.png" alt="" /></p>
+
+<blockquote>
+<p><font color=#84d5cf> __ forwarding持有指向该实例自身的指针，通过成员变量__forwarding访问成员变量val</font></p>
+</blockquote>
+
+<p>栈上的<font color=#d6339a><strong>block</font>变量用结构体实例在<font color=#d6339a></strong>block</font>变量从栈复制到堆上，会将成员变量<font color=#d6339a><strong>forwarding</font>的值替换为复制目标堆上的<font color=#d6339a></strong>block</font>变量结构体实例地址，顺利访问同一个<font color=#d6339a>__block</font>变量
+<img src="http://ptyj5p18v.bkt.clouddn.com/block_forwarding_copy.png" alt="" /></p>
+
+<pre><code class="language-cpp">struct __Block__modifyVarBlock_block_impl_0 {
+  struct __block_impl impl;
+  struct __Block__modifyVarBlock_block_desc_0* Desc;
+  __Block_byref_val_0 *val; // by ref
+  __Block__modifyVarBlock_block_impl_0(void *fp, struct __Block__modifyVarBlock_block_desc_0 *desc, __Block_byref_val_0 *_val, int flags=0) : val(_val-&gt;__forwarding) {
+    impl.isa = &amp;_NSConcreteStackBlock;
+    impl.Flags = flags;
+    impl.FuncPtr = fp;
+    Desc = desc;
+  }
+};
+</code></pre>
+
+<blockquote>
+<p><font color=#84d5cf>isa指针：指向该block的类</font>
+<font color=#84d5cf>funcPtr：block对应的函数指针</font></p>
+</blockquote>
+
+<h4 id="循环引用">循环引用</h4>
+
+<p>如果在Block中使用附有__strong修饰符的对象类型自动变量，当Block从栈复制到堆时，该对象为Block所持有，在日常代码书写中注意代码中的循环引用</p>
+
+<h5 id="解决办法">解决办法</h5>
+
+<ul>
+<li><font color=#d6339a>__weak typeof(self) weakSelf = self;</font></li>
+<li>Reactive Cocoa中的<font color=#d6339a> @weakify </font>和<font color=#d6339a> @strongify </font>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<br /></li>
+</ul>
          
       </div>
     </div>
