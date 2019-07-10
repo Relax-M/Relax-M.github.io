@@ -93,7 +93,7 @@
          <h1>Block 探究</h1>
          <p><img src="http://ptyj5p18v.bkt.clouddn.com/block_ios.png" alt="" /></p>
 
-<h4 id="概要">概要</h4>
+<h4 id="1-概要">1.概要</h4>
 
 <blockquote>
 <p><font color=#84d5cf>带有自动变量（局部变量）的匿名函数</font></p>
@@ -103,10 +103,23 @@
 
 <p>Block 是 Objective-C 对于闭包的实现。闭包 = 一个函数「或指向函数的指针」+ 该函数执行的外部的上下文变量「也就是自由变量」</p>
 
-<h4 id="语法">语法</h4>
+<h4 id="2-语法">2.语法</h4>
 
 <blockquote>
 <p><font color=#84d5cf>^ 返回值类型 (参数列表) {表达式}</font></p>
+</blockquote>
+
+<pre><code>  int (^blk)(int) = ^int(int count) {
+        return count + 1;
+    };
+</code></pre>
+
+<ul>
+<li>省略返回值类型</li>
+</ul>
+
+<blockquote>
+<p><font color=#84d5cf>^ (参数列表) { 表达式 };</font></p>
 </blockquote>
 
 <pre><code>  int (^blk)(int) = ^(int count) {
@@ -114,7 +127,33 @@
     };
 </code></pre>
 
-<h4 id="实质">实质</h4>
+<ul>
+<li>省略参数列表<br /></li>
+</ul>
+
+<blockquote>
+<p><font color=#84d5cf>^ 返回值类型 (void) { 表达式 };</font></p>
+</blockquote>
+
+<pre><code>   int (^blk2)(void) = ^int{
+        return 0;
+    };
+</code></pre>
+
+<ul>
+<li>省略返回值类型、参数列表：</li>
+</ul>
+
+<blockquote>
+<p><font color=#84d5cf>^ { 表达式 };</font></p>
+</blockquote>
+
+<pre><code>  void (^blk)(void) = ^{
+        NSLog(@&quot;Blocks&quot;);
+    };
+</code></pre>
+
+<h4 id="3-实质">3.实质</h4>
 
 <p>Block语法看上去好像很特别，Block实际上是作为极普通的C语言源码来处理的：含有Block语法的源码首先被转换成C语言编译器能处理的源码，再作为普通的C源代码进行编译。</p>
 
@@ -122,7 +161,7 @@
 <p><font color=#84d5cf>clang -rewrite-objc 源码文件名</font></p>
 </blockquote>
 
-<h4 id="截获自动变量">截获自动变量</h4>
+<h4 id="4-截获自动变量">4.截获自动变量</h4>
 
 <p>对于 block 作用域外的变量引用，block 默认是将其复制到其数据结构中来实现访问的。特别要注意的是默认情况下block只能访问不能修改局部变量的值。</p>
 
@@ -138,7 +177,7 @@
 
 <p><font color=#d6339a> __Block_byref_val_0 </font>结构体实例的成员变量<font color=#d6339a> __forwarding </font>持有指向该实例自身的指针，通过成员变量 <font color=#d6339a> __forwarding </font>访问成员变量 <font color=#d6339a>val</font></p>
 
-<h4 id="存储域">存储域</h4>
+<h4 id="5-存储域">5.存储域</h4>
 
 <p>通过前面说明可知，Block转换为Block的结构体类型的自动变量，<font color=#d6339a> __block </font>变量转换为 <font color=#d6339a> __block </font> 变量的结构体类型的自动变量。所谓结构体类型的自动变量，即栈上生成的该结构体的实例</p>
 
@@ -167,11 +206,24 @@
 
 <p>开启ARC时，大多数情况下编译器会恰当地进行判断是否有需要将Block从栈复制到堆，如果有，自动生成将Block从栈上复制到堆上的代码。<font color=#d6339a> __block </font>变量用结构体成员变量<font color=#d6339a> __forwarding </font>可以实现无论<font color=#d6339a> __block </font>变量配置在栈上还是堆上都能够正确的访问<font color=#d6339a> __block </font>变量</p>
 
-<p>但向方法或者函数的参数传递Block时，编译器不能进行判断，此时我们可以使用”copy 实例方法“</p>
+<p>以下两种方法的情况下，会进行自动拷贝</p>
+
+<ul>
+<li>Cocoa 框架的方法且方法名中含有 usingBlock 等时</li>
+<li>Grand Central Dispatch（GCD） 的 API</li>
+</ul>
+
+<p>那么编译器不能进行判断究竟是什么样的情况呢？</p>
+
+<ul>
+<li>向方法或函数的参数中传递Block</li>
+</ul>
+
+<p>此时我们可以使用<font color=#d6339a> ”copy 实例方法“（alloc / new / copy / mutableCopy）</font>手动拷贝</p>
 
 <p><img src="http://ptyj5p18v.bkt.clouddn.com/block_copy.png" alt="" /></p>
 
-<h4 id="block-探究">Block 探究</h4>
+<h4 id="6-block-探究">6.Block 探究</h4>
 
 <p>通过上面的转换，让我们深入了解Block</p>
 
@@ -196,6 +248,38 @@
 <p><font color=#84d5cf>OC方法转换具体实现</font></p>
 </blockquote>
 
+<pre><code class="language-cpp">/* Block 结构体 */
+struct __Block__modifyVarBlock_block_impl_0 {
+// impl：Block 的实际函数指针，指向包含 Block 主体部分的 __main_block_func_0 结构体
+  struct __block_impl impl;
+  // Desc：Desc 指针，指向包含 Block 附加信息的 __main_block_desc_0（） 结构体
+  struct __Block__modifyVarBlock_block_desc_0* Desc;
+  __Block_byref_val_0 *val; 
+   // __main_block_impl_0：Block 构造函数 负责初始化结构体（Block 结构体） 的成员变量
+  __Block__modifyVarBlock_block_impl_0(void *fp, struct __Block__modifyVarBlock_block_desc_0 *desc, __Block_byref_val_0 *_val, int flags=0) : val(_val-&gt;__forwarding) {
+    impl.isa = &amp;_NSConcreteStackBlock;
+    impl.Flags = flags;
+    impl.FuncPtr = fp;
+    Desc = desc;
+  }
+};
+</code></pre>
+
+<blockquote>
+<p><font color=#84d5cf>成员变量 impl;
+成员变量 Desc 指针;
+__main_block_impl_0 构造函数.</font></p>
+</blockquote>
+
+<pre><code class="language-cpp">/* 包含 Block 实际函数指针的结构体 */
+struct __block_impl {
+    void *isa;             // 用于保存 Block 结构体的实例指针
+    int Flags;            // 标志位
+    int Reserved;        // 今后版本升级所需的区域大小
+    void *FuncPtr;      // 函数指针
+};
+</code></pre>
+
 <pre><code class="language-c">static void __Block__modifyVarBlock_block_func_0(struct __Block__modifyVarBlock_block_impl_0 *__cself) {
   __Block_byref_val_0 *val = __cself-&gt;val; // bound by ref
         (val-&gt;__forwarding-&gt;val) = 1;
@@ -209,6 +293,7 @@
 <pre><code class="language-cpp">static struct __Block__modifyVarBlock_block_desc_0 {
   size_t reserved;
   size_t Block_size;
+  
   void (*copy)(struct __Block__modifyVarBlock_block_impl_0*, struct __Block__modifyVarBlock_block_impl_0*);
   void (*dispose)(struct __Block__modifyVarBlock_block_impl_0*);
 } __Block__modifyVarBlock_block_desc_0_DATA = { 0, sizeof(struct __Block__modifyVarBlock_block_impl_0), __Block__modifyVarBlock_block_copy_0, __Block__modifyVarBlock_block_dispose_0};
@@ -230,20 +315,12 @@ static void __Block__modifyVarBlock_block_dispose_0(struct __Block__modifyVarBlo
 
 <p>block从堆上移除，会调用block内部的dispose函数，dispose函数内部会调用<font color=#d6339a>__Block_object_dispose</font>函数，动释放引用的auto变量（release）</p>
 
-<pre><code class="language-cpp">struct __block_impl {
-    void *isa;
-    int Flags;
-    int Reserved;
-    void *FuncPtr;
-};
-</code></pre>
-
 <pre><code class="language-cpp">struct __Block_byref_val_0 {
-  void *__isa;
-__Block_byref_val_0 *__forwarding;
- int __flags;
- int __size;
- int val;
+  void *__isa; //标识对象类的 isa 实例变量
+__Block_byref_val_0 *__forwarding;//传入变量的地址
+ int __flags;//标志位
+ int __size;//结构体大小
+ int val;//存放实例变量 val 实际的值，相当于原局部变量的成员变量（和之前不加__block修饰符的时候一致）
 };
 </code></pre>
 
@@ -256,33 +333,28 @@ __Block_byref_val_0 *__forwarding;
 <p>栈上的<font color=#d6339a><strong>block</font>变量用结构体实例在<font color=#d6339a></strong>block</font>变量从栈复制到堆上，会将成员变量<font color=#d6339a><strong>forwarding</font>的值替换为复制目标堆上的<font color=#d6339a></strong>block</font>变量结构体实例地址，顺利访问同一个<font color=#d6339a>__block</font>变量
 <img src="http://ptyj5p18v.bkt.clouddn.com/block_forwarding_copy.png" alt="" /></p>
 
-<pre><code class="language-cpp">struct __Block__modifyVarBlock_block_impl_0 {
-  struct __block_impl impl;
-  struct __Block__modifyVarBlock_block_desc_0* Desc;
-  __Block_byref_val_0 *val; // by ref
-  __Block__modifyVarBlock_block_impl_0(void *fp, struct __Block__modifyVarBlock_block_desc_0 *desc, __Block_byref_val_0 *_val, int flags=0) : val(_val-&gt;__forwarding) {
-    impl.isa = &amp;_NSConcreteStackBlock;
-    impl.Flags = flags;
-    impl.FuncPtr = fp;
-    Desc = desc;
-  }
-};
-</code></pre>
-
-<blockquote>
-<p><font color=#84d5cf>isa指针：指向该block的类</font>
-<font color=#84d5cf>funcPtr：block对应的函数指针</font></p>
-</blockquote>
-
-<h4 id="循环引用">循环引用</h4>
+<h4 id="7-循环引用">7.循环引用</h4>
 
 <p>如果在Block中使用附有__strong修饰符的对象类型自动变量，当Block从栈复制到堆时，该对象为Block所持有，在日常代码书写中注意代码中的循环引用</p>
 
-<h5 id="解决办法">解决办法</h5>
+<h5 id="arc">ARC</h5>
 
 <ul>
-<li><font color=#d6339a>__weak typeof(self) weakSelf = self;</font></li>
-<li>Reactive Cocoa中的<font color=#d6339a> @weakify </font>和<font color=#d6339a> @strongify </font>
+<li><font color=#d6339a>__weak typeof(Class) weakSelf = Class;</font></li>
+<li>Reactive Cocoa中的<font color=#d6339a> @weakify </font>和<font color=#d6339a> @strongify </font></li>
+</ul>
+
+<h5 id="mrc">MRC</h5>
+
+<ul>
+<li><font color=#d6339a>__block typeof(Class) weakSelf = Class;</font></li>
+</ul>
+
+<h4 id="参考资料">参考资料</h4>
+
+<ul>
+<li>书籍：『Objective-C 高级编程 — Blocks』</li>
+<li>博文： <a href="https://bujige.net/blog/iOS-Blocks-01.html">iOS 开发：『Blocks』详尽总结</a>
 
 
 
